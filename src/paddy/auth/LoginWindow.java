@@ -13,8 +13,10 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
+import paddy.main.MainWindow;
 import paddy.main.PaddyLauncher;
 import paddy.main.TextPrompt;
+import paddy.mysql.DatabaseManagement;
 
 public class LoginWindow extends JFrame{
 	
@@ -152,25 +154,60 @@ public class LoginWindow extends JFrame{
 	}
 
 	//user presses register button
-	protected void registerButtonPressed() {
+	private void registerButtonPressed() {
 
-		//get password as a string
-		String pass = new String(passwordField.getPassword());
+		//get password and username as strings
+		String password = new String(passwordField.getPassword());
+		String username = userField.getText();
 		
+		// create password hash and salt
 		String salt = BCrypt.gensalt();
-		String passHash = BCrypt.hashpw(pass, salt);
-		System.out.println(passHash);
+		String passHash = BCrypt.hashpw(password, salt);
+
+		if(DatabaseManagement.createUser(username, salt, passHash)){
+			//user created succesfully
+			CreateUserWindow cuw = new CreateUserWindow(username);
+			cuw.setVisible(true);
+			dispose();
+
+		}else{
+			//there was a user with that name alread
+			infoText = "Sorry, that username is already in use.";
+			infoLabel.setText("<html><div style='text-align: center;'>" + infoText + "</html>");
+			infoLabel.setForeground(Color.red);
+		}
 
 	}
 
 	//user presses login Button
-	protected void loginButtonPressed() {
+	private void loginButtonPressed() {
+		
+		//get username and password as strings
+		String username = userField.getText();
+		String password = new String(passwordField.getPassword());
 
 		//empty field check
-		if(userField.getText().equals("")){
+		if(username.equals("")){
 			infoText = "Both password and username field must be filled.";
 			infoLabel.setText("<html><div style='text-align: center;'>" + infoText + "</html>");
 			infoLabel.setForeground(Color.red);
+
+		}else{
+			
+			
+			if(DatabaseManagement.userLogin(username, password)){
+				//login was successful
+				MainWindow mw = new MainWindow(username);
+				mw.setVisible(true);
+				dispose();
+			}else{
+				// login unsucesfull either due to
+				// wrong username or password
+				infoText = "Either the username or password did not match.";
+				infoLabel.setText("<html><div style='text-align: center;'>" + infoText + "</html>");
+				infoLabel.setForeground(Color.red);
+			}
+			
 
 		}
 		
